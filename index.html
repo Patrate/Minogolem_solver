@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Minogolem Solver</title>
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#0b1220;
+  color:#e5e7eb;
+  overflow:hidden;
+}
+.app{
+  display:grid;
+  grid-template-columns:360px 1fr;
+  gap:12px;
+  padding:12px;
+  height:100vh;
+  box-sizing:border-box;
+}
+.panel{
+  background:#111827;
+  border-radius:16px;
+  padding:12px;
+  min-height:0;
+  overflow:auto;
+}
+button{
+  padding:8px 10px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  transition:transform .08s ease, box-shadow .15s ease, opacity .15s ease;
+}
+button:hover{transform:translateY(-1px)}
+button:active{transform:translateY(0)}
+button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn{background:#1f2937;color:white}
+.btn-primary{background:#22c55e;color:#052e16}
+.btn-danger{background:#ef4444;color:white}
+.prediction-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:6px;
+}
+.slot{
+  background:#0b1220;
+  border:1px solid #333;
+  padding:10px;
+  text-align:center;
+  cursor:pointer;
+  border-radius:10px;
+  transition:border-color .15s ease, box-shadow .15s ease, transform .08s ease, background .15s ease, opacity .15s ease;
+}
+.slot:hover{transform:translateY(-1px)}
+.slot.active{
+  border-color:#22c55e;
+  box-shadow:0 0 0 2px rgba(34,197,94,.25);
+  background:#101a2c;
+}
+.slot.flash{
+  box-shadow:0 0 0 3px rgba(59,130,246,.35);
+}
+.slot.fixed{
+  opacity:.35;
+  cursor:not-allowed;
+  background:#05080f;
+  border-color:#222;
+}
+main.panel{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.viewer-bar{
+  display:flex;
+  gap:8px;
+  margin-bottom:8px;
+  align-items:center;
+  flex:0 0 auto;
+}
+.canvas-row{
+  flex:1 1 auto;
+  min-height:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+.canvas-wrap{
+  min-height:0;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+}
+.swatch{
+  width:16px;
+  height:16px;
+  border-radius:4px;
+  border:1px solid rgba(255,255,255,.15);
+  flex:0 0 16px;
+}
+canvas{
+  display:block;
+  background:#0b1220;
+  border-radius:12px;
+  max-width:100%;
+  max-height:100%;
+}
+.hidden{display:none !important}
+.toggle-row{display:flex;gap:12px;margin-top:8px}
+#stepLabel{
+  padding:6px 10px;
+  background:#0b1220;
+  border-radius:10px;
+  color:#cbd5e1;
+  font-size:14px;
+}
+.flash-btn{
+  box-shadow:0 0 0 3px rgba(255,255,255,.18);
+}
+h4{margin-bottom:8px}
+pre{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:#0b1220;
+  padding:10px;
+  border-radius:10px;
+}
+.spinner{
+  display:inline-block;
+  width:14px;
+  height:14px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:white;
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+  margin-right:6px;
+  vertical-align:-2px;
+}
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
+.info-line{
+  margin:8px 0;
+  padding:8px 10px;
+  border-radius:10px;
+  background:#0b1220;
+  color:#cbd5e1;
+  font-size:14px;
+}
+.info-line strong{
+  color:#e5e7eb;
+}
+.sidebar-sep{
+  margin:16px 0 12px 0;
+  border:none;
+  border-top:1px solid rgba(255,255,255,.12);
+}
+.instructions{
+  background:#0b1220;
+  border-radius:12px;
+  padding:12px;
+  color:#cbd5e1;
+  font-size:14px;
+  line-height:1.45;
+}
+.instructions h4{
+  margin:0 0 10px 0;
+  color:#e5e7eb;
+}
+.instructions ol{
+  margin:0;
+  padding-left:18px;
+}
+.instructions li{
+  margin-bottom:6px;
+}
+.instructions em{
+  color:#fca5a5;
+}
+.legend-note{
+  margin-top:10px;
+  font-size:12px;
+  color:#94a3b8;
+  line-height:1.4;
+}
+@media (max-width: 1100px){
+  .app{grid-template-columns:1fr}
+  .canvas-row{grid-template-columns:1fr}
+}
+.viewer-bar.centered {
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.step-center {
+  font-weight: bold;
+  text-align: center;
+  min-width: 300px;
+}
+.viewer-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+  margin-bottom:8px;
+  flex:0 0 auto;
+}
+
+.viewer-bar.centered{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:16px;
+}
+
+.viewer-legend-spacer{
+  /* colonne fantôme pour s'aligner avec la légende */
+}
+
+.step-center{
+  font-weight:bold;
+  text-align:center;
+  min-width:300px;
+}
+.actions-box{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:8px;
+}
+
+.actions-list{
+  line-height:1.5;
+}
+
+.pred-buttons-row{
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  justify-content:center;
+}
+
+.actions-list{
+  line-height:1.5;
+  width:100%;
+}
+
+.action-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:6px 8px;
+  margin-bottom:6px;
+  border-radius:10px;
+  background:#08101d;
+}
+
+.action-number{
+  flex:0 0 28px;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:#1e293b;
+  color:#e5e7eb;
+  font-weight:bold;
+  font-size:13px;
+}
+
+.action-text{
+  flex:1 1 auto;
+  color:#cbd5e1;
+  padding-top:3px;
+}
+
+.action-item.current{
+  background:#13203a;
+  box-shadow:0 0 0 1px rgba(126,34,206,.45) inset;
+}
+
+.action-item.current .action-number{
+  background:#7e22ce;
+  color:white;
+}
+
+.action-item.current .action-text{
+  color:white;
+  font-weight:bold;
+}
+.play-row{
+  margin-top:10px;
+  display:flex;
+  justify-content:center;
+  gap:8px;
+}
+
+.action-btn{
+  min-width:90px;
+}
+
+.action-btn-hidden{
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.tooltip-trigger{
+  position:relative;
+  display:inline-block;
+  cursor:help;
+  text-decoration:underline dotted;
+}
+
+.tooltip-box{
+  display:none;
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  z-index:1000;
+
+  /* la boîte suit le contenu */
+  width:max-content;
+  max-width:min(90vw, 1000px);
+
+  padding:10px;
+  background:#111827;
+  color:#e5e7eb;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.45);
+}
+
+.tooltip-trigger:hover .tooltip-box{
+  display:block;
+}
+
+.tooltip-text{
+  display:block;
+  margin-bottom:10px;
+  line-height:1.4;
+  max-width:420px; /* limite seulement le texte, pas l'image */
+}
+
+.tooltip-image{
+  display:block;
+
+  /* taille naturelle de l'image */
+  width:auto;
+  height:auto;
+  max-width:min(90vw, 1000px);
+  max-height:80vh;
+
+  border-radius:8px;
+}
+
+.sidebar-panel{
+  overflow:visible;
+}
+
+#boardSvg{
+  display:block;
+  width:100%;
+  height:100%;
+  background:#0b1220;
+  border-radius:12px;
+}
+
+.viewer-row{
+  display:none;
+}
+
+.canvas-wrap{
+  position:relative;
+  min-height:0;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+}
+
+.board-shell{
+  position:relative;
+  width:100%;
+  height:100%;
+  min-height:500px;
+}
+
+.board-topbar{
+  position:absolute;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:20;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  pointer-events:none;
+}
+
+.step-center{
+  background:rgba(11,18,32,.82);
+  border:1px solid rgba(255,255,255,.10);
+  color:#e5e7eb;
+  padding:8px 14px;
+  border-radius:999px;
+  font-weight:700;
+  font-size:15px;
+  line-height:1.2;
+  text-align:center;
+  white-space:nowrap;
+  box-shadow:0 6px 20px rgba(0,0,0,.22);
+}
+
+.board-nav{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:20;
+  width:128px;
+  height:128px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:56px;
+  font-weight:700;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);
+}
+
+.board-nav:hover{
+  transform:translateY(-50%);
+}
+
+.board-nav:active{
+  transform:translateY(-50%);
+}
+
+.board-nav.left{
+  left:12px;
+}
+
+.board-nav.right{
+  right:12px;
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="panel sidebar-panel">
+<h3>Minogolem Solver</h3>
+
+<div class="info-line"><strong>Vie restante :</strong> <span id="lifeLabel">49</span></div>
+<div class="info-line actions-box">
+  <strong>Actions choisies :</strong>
+  <div id="actionsLabel" class="actions-list">—</div>
+</div>
+
+<h4>Prédictions</h4>
+<div id="predictionSlots" class="prediction-grid"></div>
+<div class="pred-buttons-row">
+  <button data-pred="Sang" class="btn" style="background:#b91c1c;">Sang</button>
+  <button data-pred="Sel" class="btn" style="background:#0ea5e9;">Sel</button>
+  <button data-pred="Or" class="btn" style="background:#f59e0b;color:#111;">Or</button>
+</div>
+
+<div class="play-row">
+  <button id="btnNext" class="btn-primary action-btn">Play</button>
+  <button id="btnReset" class="btn-danger action-btn action-btn-hidden">Reset</button>
+</div>
+
+<hr class="sidebar-sep">
+
+<div class="instructions">
+  <h4>Mode d'emploi</h4>
+  <ol>
+    <li>Passe ton premier tour sans bouger afin d'afficher les déplacements prévus du minogolem.</li>
+
+	<li>
+	  <span class="tooltip-trigger">
+		Entre les 8 prochains déplacements du minogolem.
+		<span class="tooltip-box">
+		  <span class="tooltip-text">
+			Clic droit sur le minogolem, « Afficher les enchantements », puis passe ta souris sur les deux enchantements.
+		  </span>
+		  <img src="tuto1.png" alt="Tutoriel enchantements du minogolem" class="tooltip-image">
+		</span>
+	  </span>
+	</li>
+
+    <li>Clique sur Play pour recevoir 4 actions.</li>
+    <li>Exécute les 4 instructions.</li>
+    <li>	
+	  <span class="tooltip-trigger">
+	  Entre les 4 prochains déplacements du minogolem.
+	  <span class="tooltip-box">
+		  <span class="tooltip-text">
+			Passe ta souris sur l'enchantement "Labyrinthe" et note les 4 derniers états.
+		  </span>
+		  <img src="tuto2.png" alt="Tutoriel enchantements du minogolem" class="tooltip-image">
+		</span>
+	  </span>
+	</li>
+	</li>
+    <li>Répète les étapes 3 à 5 jusqu'à la victoire.</li>
+  </ol>
+  <div style="margin-top:10px;"><em>*Victoire non garantie, le combat est par nature aléatoire. 90% de taux de réussite lors des test*</em></div>
+</div>
+
+</aside>
+
+<main class="panel">
+<div class="viewer-row">
+  <div class="viewer-bar centered">
+    <button id="prev" class="btn">◀</button>
+    <div id="stepLabel" class="step-center">État courant</div>
+    <button id="next" class="btn">▶</button>
+  </div>
+</div>
+<div class="canvas-row">
+  <div class="canvas-wrap">
+    <div class="board-shell">
+      <div class="board-topbar">
+        <div id="stepLabelTop" class="step-center">État courant</div>
+      </div>
+
+      <button id="prevSide" class="btn board-nav left" type="button" aria-label="Étape précédente">◀</button>
+      <button id="nextSide" class="btn board-nav right" type="button" aria-label="Étape suivante">▶</button>
+
+      <svg id="boardSvg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+</div>
+</main>
+
+</div>
+
+<script>
+const API = "https://emmathie.fr/minogolem/api";
+
+const appState = {
+  config: null,
+  grid: null,
+  goal: null,
+  startPos: null,
+  playerState: null,
+  enemy: null,
+  serverPredictionBuffer: [],
+  input: Array(8).fill('.'),
+  active: 0,
+  timeline: [],
+  fullTimeline: [],
+  idx: 0,
+  lastPlanActions: [],
+  turnOffset: 0,
+  isInitialized: false
+};
+
+const svg = document.getElementById("boardSvg");
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const ISO_STYLE = {
+  tileW: 96,
+  tileH: 48,
+  padX: 120,
+  padY: 120,
+  bgColor: "#0b1220",
+  floorA: "#334155",
+  floorB: "#475569",
+  holeColor: "#111827",
+  strokeColor: "rgba(255,255,255,.10)",
+  strokeWidth: 1.2,
+  goalFill: "#22c55e",
+  startFill: "#ef4444",
+  playerFill: "#f87171",
+  playerStroke: "#7f1d1d",
+  wallTop: "#8b6a2f",
+  wallLeft: "#6f5325",
+  wallRight: "#5f4720",
+  wallStroke: "rgba(0,0,0,.28)"
+};
+
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    el.setAttribute(k, v);
+  }
+  return el;
+}
+
+function computeTileSize(cols, rows) {
+  const maxDim = Math.max(cols, rows);
+
+  if (maxDim <= 8) return { tileW: 110, tileH: 55 };
+  if (maxDim <= 12) return { tileW: 96, tileH: 48 };
+  if (maxDim <= 16) return { tileW: 82, tileH: 41 };
+  if (maxDim <= 22) return { tileW: 70, tileH: 35 };
+  return { tileW: 58, tileH: 29 };
+}
+
+function gridToIso(row, col, tileW = ISO_STYLE.tileW, tileH = ISO_STYLE.tileH) {
+  return {
+    x: (col - row) * (tileW / 2),
+    y: (col + row) * (tileH / 2)
+  };
+}
+
+function diamondPoints(cx, cy, tileW = ISO_STYLE.tileW, tileH = ISO_STYLE.tileH) {
+  const hw = tileW / 2;
+  const hh = tileH / 2;
+  return [
+    [cx, cy - hh],
+    [cx + hw, cy],
+    [cx, cy + hh],
+    [cx - hw, cy]
+  ].map(([x, y]) => `${x},${y}`).join(" ");
+}
+
+function getViableBounds(grid) {
+  const rows = grid.length;
+  const cols = Math.max(...grid.map(r => r.length));
+
+  let minRow = rows;
+  let maxRow = -1;
+
+  const rowRanges = Array.from({ length: rows }, () => null);
+
+  for (let r = 0; r < rows; r++) {
+    let first = -1;
+    let last = -1;
+
+    for (let c = 0; c < cols; c++) {
+      const cell = grid[r][c] ?? "#";
+      if (cell !== "#") {
+        if (first === -1) first = c;
+        last = c;
+      }
+    }
+
+    if (first !== -1) {
+      rowRanges[r] = { start: first, end: last };
+      if (r < minRow) minRow = r;
+      if (r > maxRow) maxRow = r;
+    }
+  }
+
+  if (maxRow === -1) {
+    return {
+      minRow: 0,
+      maxRow: rows - 1,
+      rowRanges
+    };
+  }
+
+  return {
+    minRow,
+    maxRow,
+    rowRanges
+  };
+}
+
+function isPlayableCell(grid, row, col) {
+  return (grid[row]?.[col] ?? "#") !== "#";
+}
+
+function createIsoLayers(svgRoot) {
+  const gFloor = svgEl("g", { id: "iso-floor" });
+  const gGoal = svgEl("g", { id: "iso-goal" });
+  const gStart = svgEl("g", { id: "iso-start" });
+  const gWallsBack = svgEl("g", { id: "iso-walls-back" });
+  const gEntities = svgEl("g", { id: "iso-entities" });
+  const gMinos = svgEl("g", { id: "iso-minos" });
+  const gWallsFront = svgEl("g", { id: "iso-walls-front" });
+  const gArrows = svgEl("g", { id: "iso-arrows" });
+  const gOverlay = svgEl("g", { id: "iso-overlay" });
+
+  svgRoot.appendChild(gFloor);
+  svgRoot.appendChild(gGoal);
+  svgRoot.appendChild(gStart);
+  svgRoot.appendChild(gWallsBack);
+  svgRoot.appendChild(gEntities);
+  svgRoot.appendChild(gMinos);
+  svgRoot.appendChild(gWallsFront);
+  svgRoot.appendChild(gArrows);
+  svgRoot.appendChild(gOverlay);
+
+  return { gFloor, gGoal, gStart, gWallsBack, gEntities, gMinos, gWallsFront, gArrows, gOverlay };
+}
+
+function drawGoalMarker(layer, row, col) {
+  const { x: cx, y: cy } = gridToIso(row, col);
+  const w = ISO_STYLE.tileW * 0.46;
+  const h = ISO_STYLE.tileH * 0.46;
+
+  const goal = svgEl("polygon", {
+    points: diamondPoints(cx, cy, w, h),
+    fill: ISO_STYLE.goalFill,
+    stroke: "rgba(255,255,255,.55)",
+    "stroke-width": 1.5
+  });
+
+  const inner = svgEl("polygon", {
+    points: diamondPoints(cx, cy, w * 0.52, h * 0.52),
+    fill: "rgba(255,255,255,.22)",
+    stroke: "none"
+  });
+
+  layer.appendChild(goal);
+  layer.appendChild(inner);
+}
+
+function drawStartMarker(layer, row, col) {
+  const { x: cx, y: cy } = gridToIso(row, col);
+  const r = Math.max(6, ISO_STYLE.tileH * 0.22);
+
+  const ring = svgEl("circle", {
+    cx,
+    cy,
+    r: r * 1.35,
+    fill: "rgba(239,68,68,.16)",
+    stroke: ISO_STYLE.startFill,
+    "stroke-width": 2
+  });
+
+  const dot = svgEl("circle", {
+    cx,
+    cy,
+    r,
+    fill: ISO_STYLE.startFill,
+    stroke: "rgba(255,255,255,.45)",
+    "stroke-width": 1.2
+  });
+
+  layer.appendChild(ring);
+  layer.appendChild(dot);
+}
+
+function drawPlayerMarker(layer, row, col) {
+  const { x: cx, y: cy } = gridToIso(row, col);
+  const bodyW = ISO_STYLE.tileW * 0.24;
+  const bodyH = ISO_STYLE.tileH * 0.78;
+  const footY = cy + ISO_STYLE.tileH * 0.02;
+  const topY = footY - bodyH;
+
+  const shadow = svgEl("ellipse", {
+    cx,
+    cy: cy + ISO_STYLE.tileH * 0.10,
+    rx: ISO_STYLE.tileW * 0.16,
+    ry: ISO_STYLE.tileH * 0.10,
+    fill: "rgba(0,0,0,.28)"
+  });
+
+  const body = svgEl("rect", {
+    x: cx - bodyW / 2,
+    y: topY,
+    width: bodyW,
+    height: bodyH,
+    rx: bodyW * 0.3,
+    fill: ISO_STYLE.playerFill,
+    stroke: ISO_STYLE.playerStroke,
+    "stroke-width": 1.5
+  });
+
+  const head = svgEl("circle", {
+    cx,
+    cy: topY - bodyW * 0.08,
+    r: bodyW * 0.34,
+    fill: "#fecaca",
+    stroke: ISO_STYLE.playerStroke,
+    "stroke-width": 1.1
+  });
+
+  layer.appendChild(shadow);
+  layer.appendChild(body);
+  layer.appendChild(head);
+}
+
+function getMinogolemStyle(code) {
+  const styles = {
+    P:  { base: "#7c3f20", dark: "#4a2413", light: "#a85a33", horn: "#d7bd8a", eye: "#fff3d6", label: "Séculaire" },
+    Se: { base: "#d9d9d4", dark: "#9a9a94", light: "#f6f6f2", horn: "#ece3c5", eye: "#4b5563", label: "Sel" },
+    Sa: { base: "#c62828", dark: "#7f1d1d", light: "#ef5350", horn: "#dfc19f", eye: "#fff1c9", label: "Sang" },
+    O:  { base: "#d4a017", dark: "#8c6908", light: "#f3c94d", horn: "#f0dfb1", eye: "#5b4100", label: "Or" }
+  };
+  return styles[code] || { base: "#6b7280", dark: "#374151", light: "#9ca3af", horn: "#d1d5db", eye: "#f9fafb", label: "?" };
+}
+
+function getCardinalSpawnPositions(viable) {
+  const midRow = Math.floor((viable.minRow + viable.maxRow) / 2);
+
+  let minCol = Infinity;
+  let maxCol = -Infinity;
+  for (let r = viable.minRow; r <= viable.maxRow; r++) {
+    const range = viable.rowRanges[r];
+    if (!range) continue;
+    minCol = Math.min(minCol, range.start);
+    maxCol = Math.max(maxCol, range.end);
+  }
+
+  const northRow = viable.minRow - 1;
+  const southRow = viable.maxRow + 1;
+  const northCol = viable.rowRanges[viable.minRow]
+    ? Math.round((viable.rowRanges[viable.minRow].start + viable.rowRanges[viable.minRow].end) / 2)
+    : Math.round((minCol + maxCol) / 2);
+  const southCol = viable.rowRanges[viable.maxRow]
+    ? Math.round((viable.rowRanges[viable.maxRow].start + viable.rowRanges[viable.maxRow].end) / 2)
+    : Math.round((minCol + maxCol) / 2);
+
+  const midRange = viable.rowRanges[midRow];
+  const westCol = midRange ? midRange.start - 1 : minCol - 1;
+  const eastCol = midRange ? midRange.end + 1 : maxCol + 1;
+
+  return {
+    N: [northRow, northCol],
+    S: [southRow, southCol],
+    W: [midRow, westCol],
+    E: [midRow, eastCol]
+  };
+}
+
+function getMinogolemFacingTowardMap(spawnDir) {
+  // En projection iso :
+  // N = NO visuel  -> regarde vers NE
+  // E = NE visuel  -> regarde vers NO
+  // W = SO visuel  -> regarde vers NE
+  // S = SE visuel  -> regarde vers NO
+  return (spawnDir === "W") ? "E" : "W";
+}
+
+function getDirectionForType(enemyState, typeCode) {
+  if (!enemyState) return null;
+  return ["N", "S", "W", "E"].find(dir => enemyState[dir] === typeCode) || null;
+}
+
+function drawIsoWall(layer, row, col) {
+  const { x: cx, y: cy0 } = gridToIso(row, col);
+
+  // On descend le bloc pour que son point d'ancrage tombe bien
+  // sur la case courante, et non sur celle du dessus.
+  const cy = cy0 + ISO_STYLE.tileH * -0.5;
+
+  const w = ISO_STYLE.tileW * 0.88;
+  const h = ISO_STYLE.tileH * 0.88;
+  const depth = ISO_STYLE.tileH * 0.52;
+  const hw = w / 2;
+  const hh = h / 2;
+
+  const top = [
+    [cx, cy - hh],
+    [cx + hw, cy],
+    [cx, cy + hh],
+    [cx - hw, cy]
+  ];
+
+  const leftFace = [
+    [cx - hw, cy],
+    [cx, cy + hh],
+    [cx, cy + hh + depth],
+    [cx - hw, cy + depth]
+  ];
+
+  const rightFace = [
+    [cx + hw, cy],
+    [cx, cy + hh],
+    [cx, cy + hh + depth],
+    [cx + hw, cy + depth]
+  ];
+
+  const shadow = svgEl("ellipse", {
+    cx,
+    cy: cy + hh + depth * 0.82,
+    rx: w * 0.34,
+    ry: h * 0.18,
+    fill: "rgba(0,0,0,.24)"
+  });
+
+  const left = svgEl("polygon", {
+    points: leftFace.map(([x, y]) => `${x},${y}`).join(" "),
+    fill: ISO_STYLE.wallLeft,
+    stroke: ISO_STYLE.wallStroke,
+    "stroke-width": 1
+  });
+
+  const right = svgEl("polygon", {
+    points: rightFace.map(([x, y]) => `${x},${y}`).join(" "),
+    fill: ISO_STYLE.wallRight,
+    stroke: ISO_STYLE.wallStroke,
+    "stroke-width": 1
+  });
+
+  const topFace = svgEl("polygon", {
+    points: top.map(([x, y]) => `${x},${y}`).join(" "),
+    fill: ISO_STYLE.wallTop,
+    stroke: "rgba(255,255,255,.10)",
+    "stroke-width": 1
+  });
+
+  const engraving = svgEl("polygon", {
+    points: diamondPoints(cx, cy - hh * 0.06, w * 0.34, h * 0.24),
+    fill: "rgba(0,0,0,.10)",
+    stroke: "rgba(255,255,255,.08)",
+    "stroke-width": 0.8
+  });
+
+  layer.appendChild(shadow);
+  layer.appendChild(left);
+  layer.appendChild(right);
+  layer.appendChild(topFace);
+  layer.appendChild(engraving);
+}
+
+function drawIsoMinogolem(layer, row, col, typeCode, facing) {
+  const style = getMinogolemStyle(typeCode);
+  const { x: cx, y: cy } = gridToIso(row, col);
+
+  const g = svgEl("g", {
+    "data-type": typeCode,
+    "data-facing": facing
+  });
+
+  const scale = ISO_STYLE.tileH / 48;
+  const dirSign = facing === "W" ? -1 : 1;
+
+  const footY = cy + ISO_STYLE.tileH * 0.18;
+  const baseY = footY - 14 * scale;
+
+  const shadow = svgEl("ellipse", {
+    cx,
+    cy: footY + 10 * scale,
+    rx: 24 * scale,
+    ry: 10 * scale,
+    fill: "rgba(0,0,0,.28)"
+  });
+
+  const pedestalTop = svgEl("polygon", {
+    points: [
+      [cx, baseY - 10 * scale],
+      [cx + 18 * scale, baseY],
+      [cx, baseY + 10 * scale],
+      [cx - 18 * scale, baseY]
+    ].map(([x, y]) => `${x},${y}`).join(" "),
+    fill: style.dark,
+    stroke: "rgba(0,0,0,.22)",
+    "stroke-width": 1
+  });
+
+  const pedestalFrontL = svgEl("polygon", {
+    points: [
+      [cx - 18 * scale, baseY],
+      [cx, baseY + 10 * scale],
+      [cx, baseY + 25 * scale],
+      [cx - 18 * scale, baseY + 15 * scale]
+    ].map(([x, y]) => `${x},${y}`).join(" "),
+    fill: style.base,
+    stroke: "rgba(0,0,0,.20)",
+    "stroke-width": 1
+  });
+
+  const pedestalFrontR = svgEl("polygon", {
+    points: [
+      [cx + 18 * scale, baseY],
+      [cx, baseY + 10 * scale],
+      [cx, baseY + 25 * scale],
+      [cx + 18 * scale, baseY + 15 * scale]
+    ].map(([x, y]) => `${x},${y}`).join(" "),
+    fill: style.light,
+    stroke: "rgba(0,0,0,.20)",
+    "stroke-width": 1
+  });
+
+  const torso = svgEl("ellipse", {
+    cx: cx + 4 * scale * dirSign,
+    cy: footY - 38 * scale,
+    rx: 19 * scale,
+    ry: 26 * scale,
+    fill: style.base,
+    stroke: style.dark,
+    "stroke-width": 2
+  });
+
+  const belly = svgEl("ellipse", {
+    cx: cx + 6 * scale * dirSign,
+    cy: footY - 31 * scale,
+    rx: 11 * scale,
+    ry: 13 * scale,
+    fill: style.light,
+    "fill-opacity": 0.35,
+    stroke: "none"
+  });
+
+  const shoulder = svgEl("circle", {
+    cx: cx - 10 * scale * dirSign,
+    cy: footY - 48 * scale,
+    r: 15 * scale,
+    fill: style.dark,
+    stroke: "rgba(0,0,0,.15)",
+    "stroke-width": 1
+  });
+
+  const head = svgEl("ellipse", {
+    cx: cx + 18 * scale * dirSign,
+    cy: footY - 65 * scale,
+    rx: 17 * scale,
+    ry: 15 * scale,
+    fill: style.base,
+    stroke: style.dark,
+    "stroke-width": 2
+  });
+
+  const muzzle = svgEl("ellipse", {
+    cx: cx + 24 * scale * dirSign,
+    cy: footY - 62 * scale,
+    rx: 8 * scale,
+    ry: 5 * scale,
+    fill: style.light,
+    "fill-opacity": 0.45,
+    stroke: "none"
+  });
+
+  const hornBack = svgEl("path", {
+    d: `M ${cx + 8 * scale * dirSign} ${footY - 74 * scale}
+        Q ${cx + 28 * scale * dirSign} ${footY - 95 * scale}
+          ${cx + 26 * scale * dirSign} ${footY - 116 * scale}`,
+    fill: "none",
+    stroke: style.horn,
+    "stroke-width": 5,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  });
+
+  const hornFront = svgEl("path", {
+    d: `M ${cx + 24 * scale * dirSign} ${footY - 73 * scale}
+        Q ${cx + 52 * scale * dirSign} ${footY - 88 * scale}
+          ${cx + 46 * scale * dirSign} ${footY - 118 * scale}`,
+    fill: "none",
+    stroke: style.horn,
+    "stroke-width": 6,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  });
+
+  const eye = svgEl("circle", {
+    cx: cx + 23 * scale * dirSign,
+    cy: footY - 66 * scale,
+    r: 2.6 * scale,
+    fill: style.eye
+  });
+
+  const arm = svgEl("path", {
+    d: `M ${cx - 3 * scale * dirSign} ${footY - 44 * scale}
+        Q ${cx + 18 * scale * dirSign} ${footY - 26 * scale}
+          ${cx + 10 * scale * dirSign} ${footY - 6 * scale}`,
+    fill: "none",
+    stroke: style.dark,
+    "stroke-width": 9,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  });
+
+  const chain1 = svgEl("path", {
+    d: `M ${cx - 10 * scale} ${footY - 31 * scale}
+        Q ${cx - 2 * scale} ${footY - 12 * scale}
+          ${cx + 5 * scale} ${footY + 5 * scale}`,
+    fill: "none",
+    stroke: "rgba(40,40,40,.60)",
+    "stroke-width": 2
+  });
+
+  const chain2 = svgEl("path", {
+    d: `M ${cx - 2 * scale} ${footY - 34 * scale}
+        Q ${cx + 5 * scale} ${footY - 15 * scale}
+          ${cx + 13 * scale} ${footY + 3 * scale}`,
+    fill: "none",
+    stroke: "rgba(40,40,40,.45)",
+    "stroke-width": 2
+  });
+
+  const labelBg = svgEl("rect", {
+    x: cx - 48 * scale,
+    y: footY + 24 * scale,
+    width: 96 * scale,
+    height: 28 * scale,
+    rx: 7 * scale,
+    fill: "rgba(11,18,32,.78)",
+    stroke: "rgba(255,255,255,.10)",
+    "stroke-width": 0.8
+  });
+
+  const label = svgEl("text", {
+    x: cx,
+    y: footY + 42 * scale,
+    "text-anchor": "middle",
+    "font-size": `${20 * scale}px`,
+    "font-weight": "700",
+    fill: "#e5e7eb"
+  });
+  label.textContent = style.label;
+
+  g.appendChild(shadow);
+  g.appendChild(pedestalFrontL);
+  g.appendChild(pedestalFrontR);
+  g.appendChild(pedestalTop);
+  g.appendChild(shoulder);
+  g.appendChild(torso);
+  g.appendChild(belly);
+  g.appendChild(hornBack);
+  g.appendChild(head);
+  g.appendChild(muzzle);
+  g.appendChild(hornFront);
+  g.appendChild(eye);
+  g.appendChild(arm);
+  g.appendChild(chain1);
+  g.appendChild(chain2);
+  g.appendChild(labelBg);
+  g.appendChild(label);
+
+  layer.appendChild(g);
+}
+
+function flashElement(el) {
+  if (!el) return;
+  el.classList.add("flash-btn");
+  setTimeout(() => el.classList.remove("flash-btn"), 160);
+}
+
+function flashSlot(el) {
+  if (!el) return;
+  el.classList.add("flash");
+  setTimeout(() => el.classList.remove("flash"), 160);
+}
+
+function showInitMode() {
+  const btnNext = document.getElementById("btnNext");
+  const btnReset = document.getElementById("btnReset");
+  if (btnNext) btnNext.classList.remove("hidden");
+  if (btnReset) btnReset.classList.add("action-btn-hidden");
+}
+
+function showPlayMode() {
+  const btnNext = document.getElementById("btnNext");
+  const btnReset = document.getElementById("btnReset");
+  if (btnNext) btnNext.classList.remove("hidden");
+  if (btnReset) btnReset.classList.remove("action-btn-hidden");
+}
+
+function updateSidebarInfo() {
+  document.getElementById("lifeLabel").textContent = appState.playerState ? appState.playerState.hp : "—";
+
+  const el = document.getElementById("actionsLabel");
+
+  if (!appState.lastPlanActions.length) {
+    el.innerHTML = "—";
+    return;
+  }
+
+  const startNumber = Math.max(1, appState.turnOffset - appState.lastPlanActions.length + 1);
+  const startGlobalIndex = Math.max(0, appState.turnOffset - appState.lastPlanActions.length);
+  const currentGlobalIndex = appState.idx;
+
+  el.innerHTML = appState.lastPlanActions
+    .map((a, i) => {
+      const displayNumber = startNumber + i;
+      const globalIndex = startGlobalIndex + i;
+      const isCurrent = globalIndex === currentGlobalIndex;
+
+      return `
+        <div class="action-item${isCurrent ? " current" : ""}">
+          <div class="action-number">${displayNumber}</div>
+          <div class="action-text">${translateAction(a)}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function updateStepLabel() {
+  const stepLabel = document.getElementById("stepLabel");
+  const stepLabelTop = document.getElementById("stepLabelTop");
+
+  let html = "état courant";
+
+  if (appState.fullTimeline.length) {
+    const frame = appState.fullTimeline[appState.idx];
+    html = `<strong>${translateAction(frame.action)}</strong> (${appState.idx + 1}/${appState.fullTimeline.length})`;
+  }
+
+  if (stepLabel) stepLabel.innerHTML = html;
+  if (stepLabelTop) stepLabelTop.innerHTML = html;
+}
+
+function setPlayLoading(isLoading) {
+  const btn = document.getElementById("btnNext");
+  if (!btn) return;
+  btn.disabled = isLoading;
+  btn.innerHTML = isLoading
+    ? '<span class="spinner"></span>Calcul...'
+    : 'Play';
+}
+
+function fitCanvas() {
+  draw();
+}
+
+function resetRunState({ clearInput = false } = {}) {
+  appState.serverPredictionBuffer = [];
+  if (clearInput) {
+    appState.input = Array(8).fill('.');
+    appState.active = 0;
+  }
+  appState.timeline = [];
+  appState.fullTimeline = [];
+  appState.idx = 0;
+  appState.lastPlanActions = [];
+  appState.turnOffset = 0;
+}
+
+function initializeRun() {
+  resetRunState({ clearInput: false });
+  appState.isInitialized = true;
+  showPlayMode();
+  renderSlots();
+  updateSidebarInfo();
+  updateStepLabel();
+  draw();
+}
+
+async function init() {
+  const cfg = await fetch(API + "/config").then(r => r.json());
+  appState.config = cfg;
+  appState.grid = [
+    "#####################",
+    "#G......#.....#######",
+    "#.#.#.###.#.#.#######",
+    "#.#.......#.....#####",
+    "#.#.###.#.###.#.#####",
+    "#.............#...###",
+    "#.###.#.###.#.#.#.###",
+    "#...#.#.....#.......#",
+    "###.#.#.###.#.#.###.#",
+    "#.......#.....#.#...#",
+    "#.###.#.#.###.#.#.#.#",
+    "#.....#.....#.......#",
+    "#.#.#.#.#.#.#.###.#.#",
+    "#...#...#.#.......#.#",
+    "###.###.#.###.#.#.#.#",
+    "###.................#",
+    "#####.#.#.#.#.#.###.#",
+    "#####...#....#......#",
+    "#######.#.###.#.#.#.#",
+    "#######............S#",
+    "#####################"
+  ];
+  appState.goal = [1, 1];
+  appState.startPos = [19, 19];
+  appState.playerState = { pos: [19, 19], hp: 49, cd_b: 0, cd_c: 0, walls: [] };
+  appState.enemy = { N: "Se", S: "O", W: "P", E: "Sa" };
+  appState.isInitialized = false;
+
+  resetRunState({ clearInput: true });
+
+  renderSlots();
+  updateSidebarInfo();
+  updateStepLabel();
+  showInitMode();
+  fitCanvas();
+}
+
+function updateInputFromRemainingBuffer() {
+  const nextInput = [];
+  for (let i = 0; i < 4; i++) nextInput.push(appState.serverPredictionBuffer[i] ?? ".");
+  for (let i = 0; i < 4; i++) nextInput.push(".");
+  appState.input = nextInput;
+  appState.active = 4;
+}
+
+function buildPredictionBufferForPlay() {
+  if (appState.serverPredictionBuffer.length === 0) {
+    return [...appState.input];
+  }
+  return [
+    appState.input[0],
+    appState.input[1],
+    appState.input[2],
+    appState.input[3],
+    appState.input[4],
+    appState.input[5],
+    appState.input[6],
+    appState.input[7],
+  ];
+}
+
+function renderSlots() {
+  const el = document.getElementById("predictionSlots");
+  el.innerHTML = "";
+
+  const hasRollingBuffer = appState.serverPredictionBuffer.length === 4;
+  const fixedCount = hasRollingBuffer ? 4 : 0;
+
+  for (let i = 0; i < 8; i++) {
+    const div = document.createElement("div");
+    const isFixed = i < fixedCount;
+
+    div.className =
+      "slot" +
+      (i === appState.active ? " active" : "") +
+      (isFixed ? " fixed" : "");
+
+    div.textContent = appState.input[i];
+
+    if (!isFixed) {
+      div.onclick = () => {
+        appState.active = i;
+        renderSlots();
+        flashSlot(div);
+      };
+    }
+
+    el.appendChild(div);
+  }
+}
+
+document.querySelectorAll("[data-pred]").forEach(b => {
+  b.onclick = () => {
+    flashElement(b);
+
+    if (appState.active === undefined) appState.active = 0;
+    if (appState.serverPredictionBuffer.length === 4 && appState.active < 4) return;
+
+    appState.input[appState.active] = b.dataset.pred;
+
+    const start = appState.serverPredictionBuffer.length === 4 ? 4 : 0;
+    const end = 7;
+    if (appState.active < end) {
+      appState.active++;
+      if (appState.active < start) appState.active = start;
+    }
+
+    renderSlots();
+  };
+});
+
+async function play() {
+  if (!isPredictionBufferValid()) {
+    alert("Le buffer de prédiction doit être rempli d'abord.");
+    return;
+  }
+  
+  if (!appState.isInitialized) {
+    initializeRun();
+  }
+
+  setPlayLoading(true);
+
+  try {
+    const predictionBuffer = buildPredictionBufferForPlay();
+
+    const payload = {
+      grid: appState.grid,
+      goal: appState.goal,
+      state: appState.playerState,
+      enemy: appState.enemy,
+      prediction_buffer: predictionBuffer
+    };
+
+    const res = await fetch(API + "/next-block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Erreur API:", data);
+      throw new Error(JSON.stringify(data));
+    }
+
+    appState.playerState = data.new_state;
+    appState.enemy = data.new_enemy;
+    appState.serverPredictionBuffer = data.remaining_prediction_buffer;
+    appState.lastPlanActions = Array.isArray(data.plan_now) ? data.plan_now : [];
+
+    const newTimeline = data.logs.map((l, i) => ({
+      label: "Fin du tour " + (appState.turnOffset + i + 1),
+      state: l.state_after_spawn,
+      enemy: l.enemy_after_swap,
+      action: l.action,
+      fromState: l.state_before_tick
+    }));
+
+    appState.timeline = newTimeline;
+    appState.fullTimeline.push(...newTimeline);
+    appState.turnOffset += newTimeline.length;
+
+    appState.idx = appState.fullTimeline.length - newTimeline.length;
+
+    updateInputFromRemainingBuffer();
+    renderSlots();
+    updateSidebarInfo();
+    updateStepLabel();
+    draw();
+  } catch (e) {
+    console.error(e);
+    alert("Erreur Play : " + e.message);
+  } finally {
+    setPlayLoading(false);
+  }
+}
+
+document.getElementById("btnNext").onclick = () => {
+  flashElement(document.getElementById("btnNext"));
+  play();
+};
+
+document.getElementById("btnReset").onclick = () => {
+  flashElement(document.getElementById("btnReset"));
+  init();
+};
+
+function goPrevStep() {
+  if (appState.idx > 0) {
+    appState.idx--;
+    draw();
+  }
+}
+
+function goNextStep() {
+  if (appState.idx < appState.fullTimeline.length - 1) {
+    appState.idx++;
+    draw();
+  }
+}
+
+document.getElementById("prev").addEventListener("click", goPrevStep);
+document.getElementById("next").addEventListener("click", goNextStep);
+
+const prevSideBtn = document.getElementById("prevSide");
+const nextSideBtn = document.getElementById("nextSide");
+if (prevSideBtn) prevSideBtn.addEventListener("click", goPrevStep);
+if (nextSideBtn) nextSideBtn.addEventListener("click", goNextStep);
+
+
+function draw() {
+  const grid = appState.grid;
+  if (!grid || !svg) return;
+
+  const frame = appState.fullTimeline[appState.idx] || {
+    state: appState.playerState,
+    enemy: appState.enemy,
+    action: null,
+    fromState: null
+  };
+
+  const s = frame.state;
+  const e = frame.enemy;
+
+  const rows = grid.length;
+  const cols = Math.max(...grid.map(r => r.length));
+
+  const { tileW, tileH } = computeTileSize(cols, rows);
+  ISO_STYLE.tileW = tileW;
+  ISO_STYLE.tileH = tileH;
+
+  const viable = getViableBounds(grid);
+
+  svg.innerHTML = "";
+
+  const bg = svgEl("rect", {
+    x: -10000,
+    y: -10000,
+    width: 20000,
+    height: 20000,
+    fill: ISO_STYLE.bgColor
+  });
+  svg.appendChild(bg);
+
+  const layers = createIsoLayers(svg);
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (let r = viable.minRow; r <= viable.maxRow; r++) {
+    const range = viable.rowRanges[r];
+    if (!range) continue;
+
+    for (let c = range.start; c <= range.end; c++) {
+      const cell = grid[r][c] ?? "#";
+      const iso = gridToIso(r, c, tileW, tileH);
+      const cx = iso.x;
+      const cy = iso.y;
+
+      minX = Math.min(minX, cx - tileW / 2);
+      maxX = Math.max(maxX, cx + tileW / 2);
+      minY = Math.min(minY, cy - tileH / 2);
+      maxY = Math.max(maxY, cy + tileH / 2);
+
+      const poly = svgEl("polygon", {
+        points: diamondPoints(cx, cy, tileW, tileH),
+        fill: cell === "#"
+          ? ISO_STYLE.holeColor
+          : ((r + c) % 2 === 0 ? ISO_STYLE.floorA : ISO_STYLE.floorB),
+        stroke: cell === "#"
+          ? "none"
+          : ISO_STYLE.strokeColor,
+        "stroke-width": cell === "#"
+          ? 0
+          : ISO_STYLE.strokeWidth
+      });
+
+      layers.gFloor.appendChild(poly);
+    }
+  }
+
+  if (appState.goal && isPlayableCell(grid, appState.goal[0], appState.goal[1])) {
+    drawGoalMarker(layers.gGoal, appState.goal[0], appState.goal[1]);
+  }
+
+  if (appState.startPos && isPlayableCell(grid, appState.startPos[0], appState.startPos[1])) {
+    drawStartMarker(layers.gStart, appState.startPos[0], appState.startPos[1]);
+  }
+
+  if (s?.walls?.length) {
+    const playerRow = s?.pos?.[0] ?? 0;
+    const playerCol = s?.pos?.[1] ?? 0;
+
+    s.walls.forEach(([r, c]) => {
+      const isFront = r > playerRow || c > playerCol;
+      drawIsoWall(isFront ? layers.gWallsFront : layers.gWallsBack, r, c);
+
+      const iso = gridToIso(r, c, tileW, tileH);
+      minX = Math.min(minX, iso.x - tileW * 0.55);
+      maxX = Math.max(maxX, iso.x + tileW * 0.55);
+      minY = Math.min(minY, iso.y - tileH * 0.55);
+      maxY = Math.max(maxY, iso.y + tileH * 1.2);
+    });
+  }
+
+  if (s?.pos && isPlayableCell(grid, s.pos[0], s.pos[1])) {
+    drawPlayerMarker(layers.gEntities, s.pos[0], s.pos[1]);
+  }
+
+  if (e) {
+    const spawnPos = getCardinalSpawnPositions(viable);
+    const types = ["P", "Se", "Sa", "O"];
+
+    types.forEach(typeCode => {
+      const dir = getDirectionForType(e, typeCode);
+      if (!dir) return;
+
+      const [r, c] = spawnPos[dir];
+      const lookDir = getMinogolemFacingTowardMap(dir);
+
+      drawIsoMinogolem(layers.gMinos, r, c, typeCode, lookDir);
+
+      const iso = gridToIso(r, c, tileW, tileH);
+      minX = Math.min(minX, iso.x - tileW * 1.2);
+      maxX = Math.max(maxX, iso.x + tileW * 1.2);
+      minY = Math.min(minY, iso.y - tileH * 2.8);
+      maxY = Math.max(maxY, iso.y + tileH * 1.0);
+    });
+  }
+
+  if (frame.action && frame.fromState) {
+    drawArrow(layers.gArrows, frame.action, frame.fromState);
+  }
+
+  if (!Number.isFinite(minX)) {
+    minX = -tileW;
+    maxX = tileW;
+    minY = -tileH;
+    maxY = tileH;
+  }
+
+  const entityTopExtra = tileH * 2.6;
+  const entityBottomExtra = tileH * 1.2;
+
+  const vbX = minX - ISO_STYLE.padX;
+  const vbY = minY - ISO_STYLE.padY - entityTopExtra;
+  const vbW = (maxX - minX) + ISO_STYLE.padX * 2;
+  const vbH = (maxY - minY) + ISO_STYLE.padY * 2 + entityTopExtra + entityBottomExtra;
+
+  svg.setAttribute("viewBox", `${vbX} ${vbY} ${vbW} ${vbH}`);
+
+  const compassInfo = drawCompass(
+    layers.gOverlay,
+    vbX + 46,
+    vbY + 46,
+    Math.max(18, ISO_STYLE.tileW * 0.24)
+  );
+
+  const topBar = document.querySelector(".board-topbar");
+  if (topBar && compassInfo) {
+    topBar.style.left = "50%";
+    topBar.style.transform = "translateX(-50%)";
+    topBar.style.top = "10px";
+    topBar.style.gap = "18px";
+
+    const label = document.getElementById("stepLabelTop");
+    if (label) {
+      label.style.marginLeft = `${Math.max(0, compassInfo.rightEdge - (vbX + 46) + 10)}px`;
+    }
+  }
+
+  updateStepLabel();
+}
+
+function getMinogolemStyle(code) {
+  const styles = {
+    P:  { base: "#7c3f20", dark: "#4a2413", light: "#a85a33", horn: "#d7bd8a", eye: "#fff3d6", label: "Séculaire" },
+    Se: { base: "#d9d9d4", dark: "#9a9a94", light: "#f6f6f2", horn: "#ece3c5", eye: "#4b5563", label: "Sel" },
+    Sa: { base: "#c62828", dark: "#7f1d1d", light: "#ef5350", horn: "#dfc19f", eye: "#fff1c9", label: "Sang" },
+    O:  { base: "#d4a017", dark: "#8c6908", light: "#f3c94d", horn: "#f0dfb1", eye: "#5b4100", label: "Or" }
+  };
+  return styles[code] || { base: "#6b7280", dark: "#374151", light: "#9ca3af", horn: "#d1d5db", eye: "#f9fafb", label: "?" };
+}
+
+function getCardinalPositions(rows, cols) {
+  const midRow = Math.floor(rows / 2);
+  const midCol = Math.floor(cols / 2);
+
+  return {
+    N: [0, midCol],
+    S: [rows - 1, midCol],
+    W: [midRow, 0],
+    E: [midRow, cols - 1]
+  };
+}
+
+function getDirectionForType(enemyState, typeCode) {
+  if (!enemyState) return null;
+  return ["N", "S", "W", "E"].find(dir => enemyState[dir] === typeCode) || null;
+}
+
+function drawMultilineCenteredText(lines, cx, cy, fontSize, color) {
+  ctx.fillStyle = color;
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const lineHeight = Math.max(8, fontSize + 1);
+  const totalHeight = (lines.length - 1) * lineHeight;
+  const startY = cy - totalHeight / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, cx, startY + i * lineHeight);
+  });
+}
+
+function splitLabelForCell(label) {
+  if (label === "Séculaire") return ["Sécu", "laire"];
+  return [label];
+}
+
+function drawCardinalMinogolemsByType(enemyState, rows, cols, size) {
+  if (!enemyState) return;
+
+  const positions = getCardinalPositions(rows, cols);
+  const types = ["P", "Se", "Sa", "O"];
+
+  types.forEach(typeCode => {
+    const dir = getDirectionForType(enemyState, typeCode);
+    if (!dir) return;
+
+    const pos = positions[dir];
+    const style = getMinogolemStyle(typeCode);
+
+    const x = pos[1] * size;
+    const y = pos[0] * size;
+    const inset = size * 0.08;
+    const w = size - 2 * inset;
+    const h = size - 2 * inset;
+
+    ctx.fillStyle = style.color;
+    ctx.fillRect(x + inset, y + inset, w, h);
+
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + inset, y + inset, w, h);
+
+    const labelLines = splitLabelForCell(style.label);
+    const fontSize = labelLines.length > 1
+      ? Math.max(7, size * 0.18)
+      : Math.max(8, size * 0.22);
+
+    drawMultilineCenteredText(
+      labelLines,
+      x + size / 2,
+      y + size / 2,
+      fontSize,
+      style.text
+    );
+  });
+}
+
+function parseActionMoves(action) {
+  if (!action) return { type: null, moves: [] };
+
+  let core = action.trim();
+  if (core.includes("+")) {
+    core = core.split("+")[1].trim();
+  }
+
+  if (core.startsWith("MOVE2")) {
+    const seq = (core.split(/\s+/)[1] || "").trim();
+    return { type: "MOVE2", moves: seq ? seq.split("") : [] };
+  }
+
+  if (core.startsWith("MOVE ")) {
+    const dir = (core.split(/\s+/)[1] || "").trim();
+    return { type: "MOVE", moves: dir ? [dir] : [] };
+  }
+
+  if (core.startsWith("PUSH ")) {
+    const dir = (core.split(/\s+/)[1] || "").trim();
+    return { type: "PUSH", moves: dir ? [dir] : [] };
+  }
+
+  return { type: "OTHER", moves: [] };
+}
+
+function drawArrow(layer, action, fromState) {
+  const parsed = parseActionMoves(action);
+  if (!parsed.moves.length || !fromState?.pos) return;
+
+  const dirVec = { N: [-1, 0], S: [1, 0], W: [0, -1], E: [0, 1] };
+
+  const isPush = parsed.type === "PUSH";
+  const color = isPush ? "#38bdf8" : "#f59e0b";
+  const outline = "rgba(0,0,0,.45)";
+  const lineWidth = parsed.type === "MOVE2"
+    ? Math.max(8, ISO_STYLE.tileH * 0.34)
+    : Math.max(7, ISO_STYLE.tileH * 0.28);
+  const yLift = ISO_STYLE.tileH * 0.34;
+
+  const rawPoints = [];
+  let cur = [...fromState.pos];
+
+  {
+    const p = gridToIso(cur[0], cur[1]);
+    rawPoints.push([p.x, p.y - yLift]);
+  }
+
+  parsed.moves.forEach(d => {
+    const v = dirVec[d];
+    cur = [cur[0] + v[0], cur[1] + v[1]];
+    const p = gridToIso(cur[0], cur[1]);
+    rawPoints.push([p.x, p.y - yLift]);
+  });
+
+  if (rawPoints.length < 2) return;
+
+  const points = rawPoints.map(([x, y]) => [x, y]);
+
+  const rawStart = rawPoints[0];
+  const rawNext = rawPoints[1];
+  const rawPrev = rawPoints[rawPoints.length - 2];
+  const rawEnd = rawPoints[rawPoints.length - 1];
+
+  const startVx = rawNext[0] - rawStart[0];
+  const startVy = rawNext[1] - rawStart[1];
+  const startLen = Math.hypot(startVx, startVy) || 1;
+  const sux = startVx / startLen;
+  const suy = startVy / startLen;
+
+  const endVx = rawEnd[0] - rawPrev[0];
+  const endVy = rawEnd[1] - rawPrev[1];
+  const endLen = Math.hypot(endVx, endVy) || 1;
+  const eux = endVx / endLen;
+  const euy = endVy / endLen;
+  const enx = -euy;
+  const eny = eux;
+
+  const startTrim = ISO_STYLE.tileW * 0.16;
+  const endTrim = ISO_STYLE.tileW * 0.22;
+  const headLen = Math.max(14, ISO_STYLE.tileW * 0.30);
+  const headHalf = Math.max(8, ISO_STYLE.tileW * 0.12);
+
+  points[0] = [
+    rawStart[0] + sux * startTrim,
+    rawStart[1] + suy * startTrim
+  ];
+
+  const arrowTip = [rawEnd[0], rawEnd[1]];
+  const lineEnd = [
+    rawEnd[0] - eux * endTrim,
+    rawEnd[1] - euy * endTrim
+  ];
+  points[points.length - 1] = lineEnd;
+
+  const polylinePoints = points.map(([x, y]) => `${x},${y}`).join(" ");
+
+  const outlineLine = svgEl("polyline", {
+    points: polylinePoints,
+    fill: "none",
+    stroke: outline,
+    "stroke-width": lineWidth + 4,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  });
+
+  const mainLine = svgEl("polyline", {
+    points: polylinePoints,
+    fill: "none",
+    stroke: color,
+    "stroke-width": lineWidth,
+    "stroke-linecap": "round",
+    "stroke-linejoin": "round"
+  });
+
+  const arrowBaseX = arrowTip[0] - eux * headLen;
+  const arrowBaseY = arrowTip[1] - euy * headLen;
+
+  const headOutline = svgEl("polygon", {
+    points: [
+      [arrowTip[0], arrowTip[1]],
+      [arrowBaseX + enx * (headHalf + 2), arrowBaseY + eny * (headHalf + 2)],
+      [arrowBaseX - enx * (headHalf + 2), arrowBaseY - eny * (headHalf + 2)]
+    ].map(([x, y]) => `${x},${y}`).join(" "),
+    fill: outline
+  });
+
+  const head = svgEl("polygon", {
+    points: [
+      [arrowTip[0], arrowTip[1]],
+      [arrowBaseX + enx * headHalf, arrowBaseY + eny * headHalf],
+      [arrowBaseX - enx * headHalf, arrowBaseY - eny * headHalf]
+    ].map(([x, y]) => `${x},${y}`).join(" "),
+    fill: color
+  });
+
+  layer.appendChild(outlineLine);
+  layer.appendChild(mainLine);
+  layer.appendChild(headOutline);
+  layer.appendChild(head);
+}
+
+function drawCompass(layer, x, y, size) {
+  const g = svgEl("g", { id: "iso-compass" });
+
+  const lineColor = "rgba(226,232,240,.85)";
+  const labelColor = "#e2e8f0";
+  const coreColor = "rgba(148,163,184,.9)";
+  const r = size;
+
+  const ends = {
+    N: [x + r, y - r],
+    E: [x - r, y - r],
+    S: [x - r, y + r],
+    W: [x + r, y + r]
+  };
+
+  const arm1 = svgEl("line", {
+    x1: ends.E[0], y1: ends.E[1],
+    x2: ends.W[0], y2: ends.W[1],
+    stroke: lineColor,
+    "stroke-width": 2.2,
+    "stroke-linecap": "round"
+  });
+
+  const arm2 = svgEl("line", {
+    x1: ends.N[0], y1: ends.N[1],
+    x2: ends.S[0], y2: ends.S[1],
+    stroke: lineColor,
+    "stroke-width": 2.2,
+    "stroke-linecap": "round"
+  });
+
+  const core = svgEl("circle", {
+    cx: x,
+    cy: y,
+    r: 3.2,
+    fill: coreColor
+  });
+
+  g.appendChild(arm1);
+  g.appendChild(arm2);
+  g.appendChild(core);
+
+  const labels = [
+    ["Nord", ends.N[0] + 10, ends.N[1] - 2],
+    ["Ouest", ends.E[0] - 10, ends.E[1] - 2],
+    ["Sud", ends.S[0] - 10, ends.S[1] + 14],
+    ["Est", ends.W[0] + 10, ends.W[1] + 14]
+  ];
+
+  labels.forEach(([txt, lx, ly]) => {
+    const t = svgEl("text", {
+      x: lx,
+      y: ly,
+      "text-anchor": "middle",
+      "font-size": `${Math.max(11, size * 0.30)}px`,
+      "font-weight": "700",
+      fill: labelColor
+    });
+    t.textContent = txt;
+    g.appendChild(t);
+  });
+
+  layer.appendChild(g);
+
+  return {
+    x,
+    y,
+    size: r,
+    rightEdge: x + r + 22
+  };
+}
+
+function isPredictionBufferValid() {
+  return appState.input.length === 8 &&
+    appState.input.every(v => v && v !== "." && ["Sang", "Sel", "Or"].includes(v));
+}
+
+function translateAction(action) {
+  if (!action) return "état courant";
+
+  let prefix = "";
+  let core = action.trim();
+
+  // Gestion du "D x<nombre> + ..."
+  const dMatch = core.match(/^D\s*x(\d+)\s*\+\s*(.*)$/i);
+  if (dMatch) {
+    prefix = `Placidité ${dMatch[1]} puis `;
+    core = dMatch[2].trim();
+  }
+
+  // Traduction des directions
+  const dirMap = {
+    N: "nord",
+    S: "sud",
+    E: "est",
+    W: "ouest"
+  };
+
+  function translateDirections(seq) {
+    return seq
+      .split("")
+      .map(d => dirMap[d] || d)
+      .join(" puis ");
+  }
+
+  // Traduction des actions
+  if (core.startsWith("WAIT")) {
+    return prefix + "Attendre";
+  }
+
+  if (core.startsWith("MOVE2")) {
+    const parts = core.split(/\s+/);
+    const seq = parts[1] || "";
+    return prefix + "Déplacement rapide " + translateDirections(seq);
+  }
+
+  if (core.startsWith("MOVE")) {
+    const parts = core.split(/\s+/);
+    const dir = parts[1] || "";
+    return prefix + "Déplacement " + translateDirections(dir);
+  }
+
+  if (core.startsWith("PUSH")) {
+    const parts = core.split(/\s+/);
+    const dir = parts[1] || "";
+    return prefix + "Décalage " + translateDirections(dir);
+  }
+
+  return prefix + core; // fallback
+}
+
+window.addEventListener("resize", fitCanvas);
+init();
+</script>
+</body>
+</html>
